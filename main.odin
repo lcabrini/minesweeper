@@ -77,13 +77,19 @@ main :: proc() {
                 y := cell.y * CELL_SIZE + MARGIN + 1
                 w: i32 = CELL_SIZE - 2
                 h: i32 = CELL_SIZE - 2
-                rl.DrawRectangle(x, y, h, w, rl.GRAY)
+                rl.DrawRectangle(x, y, h, w, rl.DARKGRAY)
             } else if cell.opened {
                 s := strings.clone_to_cstring(fmt.tprint(cell.adjacent_mines))
                 tw := rl.MeasureText(s, COUNTER_SIZE)
                 x := MARGIN + cell.x * CELL_SIZE + (CELL_SIZE / 2 - tw / 2)
                 y := MARGIN + cell.y * CELL_SIZE + (CELL_SIZE / 2 - COUNTER_SIZE / 2)
                 rl.DrawText(s, x, y, COUNTER_SIZE, counter_colors[cell.adjacent_mines])
+            } else {
+                x := MARGIN + cell.x * CELL_SIZE + 1
+                y := MARGIN + cell.y * CELL_SIZE + 1
+                h := i32(CELL_SIZE - 2)
+                w := i32(CELL_SIZE - 2)
+                rl.DrawRectangle(x, y, w, h, rl.GRAY)
             }
         }
         rl.EndDrawing()
