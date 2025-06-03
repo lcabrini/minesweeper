@@ -56,13 +56,12 @@ main :: proc() {
         if rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
             cell := get_mouse_cell(&grid)
             if cell.x >= 0 && cell.x < 16 && cell.y >= 0 && cell.y < 16 {
-                fmt.println(cell)
                 if cell.has_mine {
                     fmt.println("BOOM!")
                 } else if cell.adjacent_mines > 0 {
-
                     cell.opened = true
-
+                } else {
+                    open_cells(&grid, cell.y, cell.x)
                 }
             }
         }
@@ -78,13 +77,13 @@ main :: proc() {
                 w: i32 = CELL_SIZE - 2
                 h: i32 = CELL_SIZE - 2
                 rl.DrawRectangle(x, y, h, w, rl.DARKGRAY)
-            } else if cell.opened {
+            } else if cell.opened && cell.adjacent_mines > 0 {
                 s := strings.clone_to_cstring(fmt.tprint(cell.adjacent_mines))
                 tw := rl.MeasureText(s, COUNTER_SIZE)
                 x := MARGIN + cell.x * CELL_SIZE + (CELL_SIZE / 2 - tw / 2)
                 y := MARGIN + cell.y * CELL_SIZE + (CELL_SIZE / 2 - COUNTER_SIZE / 2)
                 rl.DrawText(s, x, y, COUNTER_SIZE, counter_colors[cell.adjacent_mines])
-            } else {
+            } else if !cell.opened {
                 x := MARGIN + cell.x * CELL_SIZE + 1
                 y := MARGIN + cell.y * CELL_SIZE + 1
                 h := i32(CELL_SIZE - 2)
@@ -174,4 +173,36 @@ count_adjacent_mines :: proc(grid: ^[dynamic]Cell) {
             cell.adjacent_mines = count
         }
     }
+}
+
+open_cells :: proc(grid: ^[dynamic]Cell, row, col: i32) {
+    if row < 0 || row >= GRID_HEIGHT || col < 0 || col >= GRID_WIDTH {
+        fmt.println("out of bounds")
+        return
+    }
+
+    if grid[row * GRID_WIDTH + col].has_mine {
+        fmt.println("has mine")
+        return
+    }
+
+    if grid[row * GRID_WIDTH + col].opened {
+        fmt.println("opened")
+        return
+    }
+
+    grid[row * GRID_WIDTH + col].opened = true
+    if grid[row * GRID_WIDTH + col].adjacent_mines > 0 {
+        fmt.println("has counter")
+        return
+    }
+
+    open_cells(grid, row-1, col-1)
+    open_cells(grid, row-1, col)
+    open_cells(grid, row-1, col+1)
+    open_cells(grid, row, col-1)
+    open_cells(grid, row, col+1)
+    open_cells(grid, row+1, col-1)
+    open_cells(grid, row+1, col)
+    open_cells(grid, row+1, col+1)
 }
