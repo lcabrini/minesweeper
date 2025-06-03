@@ -177,23 +177,19 @@ count_adjacent_mines :: proc(grid: ^[dynamic]Cell) {
 
 open_cells :: proc(grid: ^[dynamic]Cell, row, col: i32) {
     if row < 0 || row >= GRID_HEIGHT || col < 0 || col >= GRID_WIDTH {
-        fmt.println("out of bounds")
         return
     }
 
     if grid[row * GRID_WIDTH + col].has_mine {
-        fmt.println("has mine")
         return
     }
 
     if grid[row * GRID_WIDTH + col].opened {
-        fmt.println("opened")
         return
     }
 
     grid[row * GRID_WIDTH + col].opened = true
     if grid[row * GRID_WIDTH + col].adjacent_mines > 0 {
-        fmt.println("has counter")
         return
     }
 
