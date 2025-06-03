@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:os"
 import "core:strings"
 import rl "vendor:raylib"
 
@@ -31,6 +32,11 @@ Cell :: struct {
 }
 
 main :: proc() {
+    cheat := false
+    if len(os.args[1:]) > 0 && os.args[1] == "cheat" {
+        cheat = true
+    }
+
     rl.SetConfigFlags({.VSYNC_HINT})
     rl.InitWindow(WIDTH, HEIGHT, TITLE)
     rl.SetTargetFPS(60)
@@ -71,7 +77,7 @@ main :: proc() {
         draw_grid(16, 16)
 
         for cell in grid {
-            if cell.has_mine {
+            if cheat && cell.has_mine {
                 x := cell.x * CELL_SIZE + MARGIN + 1
                 y := cell.y * CELL_SIZE + MARGIN + 1
                 w: i32 = CELL_SIZE - 2
