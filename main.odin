@@ -61,7 +61,7 @@ main :: proc() {
     for !rl.WindowShouldClose() {
         if rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
             cell := get_mouse_cell(&grid)
-            if cell.x >= 0 && cell.x < 16 && cell.y >= 0 && cell.y < 16 {
+            if cell.x >= 0 && cell.x < GRID_WIDTH && cell.y >= 0 && cell.y < GRID_HEIGHT {
                 if cell.has_mine {
                     fmt.println("BOOM!")
                 } else if cell.adjacent_mines > 0 {
@@ -74,7 +74,7 @@ main :: proc() {
 
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
-        draw_grid(16, 16)
+        draw_grid(GRID_WIDTH, GRID_HEIGHT)
 
         for cell in grid {
             if cheat && cell.has_mine {
