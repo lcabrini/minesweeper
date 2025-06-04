@@ -9,7 +9,11 @@ WIDTH :: 1024
 HEIGHT :: 768
 TITLE :: "Minewsweeper"
 
-MARGIN :: 32
+MIDX :: WIDTH / 2
+MIDY :: WIDTH / 2
+
+MARGINX :: MIDX - GRID_WIDTH * CELL_SIZE / 2
+MARGINY :: 32
 CELL_SIZE :: 32
 GRID_WIDTH :: 16
 GRID_HEIGHT :: 16
@@ -102,20 +106,20 @@ main :: proc() {
 
         for cell in grid {
             if cheat && cell.has_mine {
-                x := cell.x * CELL_SIZE + MARGIN + 1
-                y := cell.y * CELL_SIZE + MARGIN + 1
+                x := cell.x * CELL_SIZE + MARGINX + 1
+                y := cell.y * CELL_SIZE + MARGINY + 1
                 w: i32 = CELL_SIZE - 2
                 h: i32 = CELL_SIZE - 2
                 rl.DrawRectangle(x, y, h, w, rl.DARKGRAY)
             } else if cell.opened && cell.adjacent_mines > 0 {
                 s := strings.clone_to_cstring(fmt.tprint(cell.adjacent_mines))
                 tw := rl.MeasureText(s, COUNTER_SIZE)
-                x := MARGIN + cell.x * CELL_SIZE + (CELL_SIZE / 2 - tw / 2)
-                y := MARGIN + cell.y * CELL_SIZE + (CELL_SIZE / 2 - COUNTER_SIZE / 2)
+                x := MARGINX + cell.x * CELL_SIZE + (CELL_SIZE / 2 - tw / 2)
+                y := MARGINY + cell.y * CELL_SIZE + (CELL_SIZE / 2 - COUNTER_SIZE / 2)
                 rl.DrawText(s, x, y, COUNTER_SIZE, counter_colors[cell.adjacent_mines])
             } else if !cell.opened {
-                x := MARGIN + cell.x * CELL_SIZE + 1
-                y := MARGIN + cell.y * CELL_SIZE + 1
+                x := MARGINX + cell.x * CELL_SIZE + 1
+                y := MARGINY + cell.y * CELL_SIZE + 1
                 h := i32(CELL_SIZE - 2)
                 w := i32(CELL_SIZE - 2)
                 rl.DrawRectangle(x, y, w, h, rl.GRAY)
@@ -123,18 +127,18 @@ main :: proc() {
 
             #partial switch cell.flag {
                 case .FLAG:
-                    x := MARGIN + cell.x * CELL_SIZE + 1
-                    y := MARGIN + cell.y * CELL_SIZE + 1
+                    x := MARGINX + cell.x * CELL_SIZE + 1
+                    y := MARGINY + cell.y * CELL_SIZE + 1
                     rl.DrawTexture(flag_tex, x, y, rl.RAYWHITE)
                 case .MAYBE:
-                    x := MARGIN + cell.x * CELL_SIZE + 1
-                    y := MARGIN + cell.y * CELL_SIZE + 1
+                    x := MARGINX + cell.x * CELL_SIZE + 1
+                    y := MARGINY + cell.y * CELL_SIZE + 1
                     rl.DrawTexture(maybe_tex, x, y, rl.RAYWHITE)
             }
 
             if cell.exploded {
-                x := MARGIN + cell.x * CELL_SIZE + 1
-                y := MARGIN + cell.y * CELL_SIZE + 1
+                x := MARGINX + cell.x * CELL_SIZE + 1
+                y := MARGINY + cell.y * CELL_SIZE + 1
                 rl.DrawTexture(exploded_tex, x, y, rl.RAYWHITE)
             }
         }
@@ -162,18 +166,18 @@ init_grid :: proc(grid: ^[dynamic]Cell, w, h: i32) {
 
 draw_grid :: proc(w, h: i32) {
     for r: i32 = 0; r <= h; r += 1 {
-        rl.DrawLine(MARGIN, r*CELL_SIZE+MARGIN, h*CELL_SIZE+MARGIN, r*CELL_SIZE+MARGIN, rl.RAYWHITE)
+        rl.DrawLine(MARGINX, r*CELL_SIZE+MARGINY, h*CELL_SIZE+MARGINX, r*CELL_SIZE+MARGINY, rl.RAYWHITE)
     }
 
     for c: i32 = 0; c <= w; c += 1 {
-        rl.DrawLine(c*CELL_SIZE+MARGIN, MARGIN, c*CELL_SIZE+MARGIN, w*CELL_SIZE+MARGIN, rl.RAYWHITE)
+        rl.DrawLine(c*CELL_SIZE+MARGINX, MARGINY, c*CELL_SIZE+MARGINX, w*CELL_SIZE+MARGINY, rl.RAYWHITE)
     }
 }
 
 get_mouse_cell :: proc(grid: ^[dynamic]Cell) -> ^Cell {
     mp := rl.GetMousePosition()
-    x := mp.x >= MARGIN ? i32(mp.x / CELL_SIZE - 1) : -1
-    y := mp.y >= MARGIN ? i32(mp.y / CELL_SIZE - 1) : -1
+    x := mp.x >= MARGINX ? i32((mp.x - MARGINX) / CELL_SIZE) : -1
+    y := mp.y >= MARGINY ? i32((mp.y - MARGINY) / CELL_SIZE) : -1
 
     for &cell in grid {
         if x == cell.x && y == cell.y {
