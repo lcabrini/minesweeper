@@ -61,7 +61,7 @@ main :: proc() {
     for !rl.WindowShouldClose() {
         if rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
             cell := get_mouse_cell(&grid)
-            if cell.x >= 0 && cell.x < GRID_WIDTH && cell.y >= 0 && cell.y < GRID_HEIGHT {
+            if cell != nil && cell.x >= 0 && cell.x < GRID_WIDTH && cell.y >= 0 && cell.y < GRID_HEIGHT {
                 if cell.has_mine {
                     fmt.println("BOOM!")
                 } else if cell.adjacent_mines > 0 {
