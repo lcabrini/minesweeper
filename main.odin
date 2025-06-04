@@ -26,6 +26,7 @@ Cell :: struct {
     x: i32,
     y: i32,
     has_mine: bool,
+    exploded: bool,
     flag: Flag,
     opened: bool,
     adjacent_mines: i32,
@@ -40,6 +41,12 @@ main :: proc() {
     rl.SetConfigFlags({.VSYNC_HINT})
     rl.InitWindow(WIDTH, HEIGHT, TITLE)
     rl.SetTargetFPS(60)
+
+    exploded_tex := rl.LoadTexture("exploded.png")
+    flag_tex := rl.LoadTexture("flag.png")
+    incorrect_tex := rl.LoadTexture("incorrect.png")
+    maybe_tex := rl.LoadTexture("maybe.png")
+    mine_tex := rl.LoadTexture("mine.png")
 
     counter_colors: []rl.Color = {
         rl.BLANK,
@@ -64,6 +71,7 @@ main :: proc() {
             if cell != nil && cell.x >= 0 && cell.x < GRID_WIDTH && cell.y >= 0 && cell.y < GRID_HEIGHT {
                 if cell.has_mine {
                     fmt.println("BOOM!")
+                    cell.exploded = true
                 } else if cell.adjacent_mines > 0 {
                     cell.opened = true
                 } else {
@@ -96,9 +104,22 @@ main :: proc() {
                 w := i32(CELL_SIZE - 2)
                 rl.DrawRectangle(x, y, w, h, rl.GRAY)
             }
+
+            if cell.exploded {
+                x := MARGIN + cell.x * CELL_SIZE + 1
+                y := MARGIN + cell.y * CELL_SIZE + 1
+                rl.DrawTexture(exploded_tex, x, y, rl.RAYWHITE)
+            }
         }
         rl.EndDrawing()
     }
+
+    rl.UnloadTexture(exploded_tex)
+    rl.UnloadTexture(flag_tex)
+    rl.UnloadTexture(incorrect_tex)
+    rl.UnloadTexture(maybe_tex)
+    rl.UnloadTexture(mine_tex)
+    rl.CloseWindow()
 }
 
 init_grid :: proc(grid: ^[dynamic]Cell, w, h: i32) {
