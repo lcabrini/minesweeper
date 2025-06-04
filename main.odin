@@ -80,6 +80,22 @@ main :: proc() {
             }
         }
 
+        if rl.IsMouseButtonPressed(rl.MouseButton.RIGHT) {
+            cell := get_mouse_cell(&grid)
+            if cell != nil {
+                if !cell.opened {
+                    switch cell.flag {
+                        case .NONE:
+                            cell.flag = .FLAG
+                        case .FLAG:
+                            cell.flag = .MAYBE
+                        case .MAYBE:
+                            cell.flag = .NONE
+                    }
+                }
+            }
+        }
+
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
         draw_grid(GRID_WIDTH, GRID_HEIGHT)
@@ -103,6 +119,17 @@ main :: proc() {
                 h := i32(CELL_SIZE - 2)
                 w := i32(CELL_SIZE - 2)
                 rl.DrawRectangle(x, y, w, h, rl.GRAY)
+            }
+
+            #partial switch cell.flag {
+                case .FLAG:
+                    x := MARGIN + cell.x * CELL_SIZE + 1
+                    y := MARGIN + cell.y * CELL_SIZE + 1
+                    rl.DrawTexture(flag_tex, x, y, rl.RAYWHITE)
+                case .MAYBE:
+                    x := MARGIN + cell.x * CELL_SIZE + 1
+                    y := MARGIN + cell.y * CELL_SIZE + 1
+                    rl.DrawTexture(maybe_tex, x, y, rl.RAYWHITE)
             }
 
             if cell.exploded {
