@@ -36,6 +36,10 @@ Cell :: struct {
     adjacent_mines: i32,
 }
 
+Game :: struct {
+    found: int,
+}
+
 main :: proc() {
     cheat := false
     if len(os.args[1:]) > 0 && os.args[1] == "cheat" {
@@ -69,7 +73,7 @@ main :: proc() {
     place_mines(&grid, GRID_WIDTH, GRID_HEIGHT, MINE_COUNT)
     count_adjacent_mines(&grid)
 
-    found := 0
+    game := Game{}
 
     for !rl.WindowShouldClose() {
         if rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
@@ -80,7 +84,7 @@ main :: proc() {
                 } else if cell.adjacent_mines > 0 {
                     cell.opened = true
                 } else {
-                    open_cells(&grid, cell.y, cell.x)
+                    open_cells(&game, &grid, cell.y, cell.x)
                 }
             }
         }
@@ -91,15 +95,15 @@ main :: proc() {
                 if !cell.opened {
                     switch cell.flag {
                         case .NONE:
-                            if found < MINE_COUNT {
+                            if game.found < MINE_COUNT {
                                 cell.flag = .FLAG
-                                found += 1
+                                game.found += 1
                             } else {
                                 cell.flag = .MAYBE
                             }
                         case .FLAG:
                             cell.flag = .MAYBE
-                            found -= 1
+                            game.found -= 1
                         case .MAYBE:
                             cell.flag = .NONE
                     }
@@ -150,7 +154,7 @@ main :: proc() {
             }
         }
 
-        msg := rl.TextFormat("%d of %d mines found", found, MINE_COUNT)
+        msg := rl.TextFormat("%d of %d mines found", game.found, MINE_COUNT)
         tw := rl.MeasureText(msg, 20)
         rl.DrawText(msg, MIDX - tw / 2, MARGINY + CELL_SIZE * GRID_HEIGHT + 20, 20, rl.RAYWHITE)
         rl.EndDrawing()
@@ -244,30 +248,37 @@ count_adjacent_mines :: proc(grid: ^[dynamic]Cell) {
     }
 }
 
-open_cells :: proc(grid: ^[dynamic]Cell, row, col: i32) {
+open_cells :: proc(game: ^Game, grid: ^[dynamic]Cell, row, col: i32) {
+    idx := row * GRID_WIDTH + col
+
     if row < 0 || row >= GRID_HEIGHT || col < 0 || col >= GRID_WIDTH {
         return
     }
 
-    if grid[row * GRID_WIDTH + col].has_mine {
+    if grid[idx].has_mine {
         return
     }
 
-    if grid[row * GRID_WIDTH + col].opened {
+    if grid[idx].opened {
         return
     }
 
-    grid[row * GRID_WIDTH + col].opened = true
-    if grid[row * GRID_WIDTH + col].adjacent_mines > 0 {
+    grid[idx].opened = true
+    if grid[idx].flag != .NONE {
+        if grid[idx].flag == .FLAG do game.found -= 1
+        grid[idx].flag = .NONE
+    }
+
+    if grid[idx].adjacent_mines > 0 {
         return
     }
 
-    open_cells(grid, row-1, col-1)
-    open_cells(grid, row-1, col)
-    open_cells(grid, row-1, col+1)
-    open_cells(grid, row, col-1)
-    open_cells(grid, row, col+1)
-    open_cells(grid, row+1, col-1)
-    open_cells(grid, row+1, col)
-    open_cells(grid, row+1, col+1)
+    open_cells(game, grid, row-1, col-1)
+    open_cells(game, grid, row-1, col)
+    open_cells(game, grid, row-1, col+1)
+    open_cells(game, grid, row, col-1)
+    open_cells(game, grid, row, col+1)
+    open_cells(game, grid, row+1, col-1)
+    open_cells(game, grid, row+1, col)
+    open_cells(game, grid, row+1, col+1)
 }
