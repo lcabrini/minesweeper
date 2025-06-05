@@ -69,12 +69,13 @@ main :: proc() {
     place_mines(&grid, GRID_WIDTH, GRID_HEIGHT, MINE_COUNT)
     count_adjacent_mines(&grid)
 
+    found := 0
+
     for !rl.WindowShouldClose() {
         if rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
             cell := get_mouse_cell(&grid)
             if cell != nil && cell.x >= 0 && cell.x < GRID_WIDTH && cell.y >= 0 && cell.y < GRID_HEIGHT {
                 if cell.has_mine {
-                    fmt.println("BOOM!")
                     cell.exploded = true
                 } else if cell.adjacent_mines > 0 {
                     cell.opened = true
@@ -90,9 +91,15 @@ main :: proc() {
                 if !cell.opened {
                     switch cell.flag {
                         case .NONE:
-                            cell.flag = .FLAG
+                            if found < MINE_COUNT {
+                                cell.flag = .FLAG
+                                found += 1
+                            } else {
+                                cell.flag = .MAYBE
+                            }
                         case .FLAG:
                             cell.flag = .MAYBE
+                            found -= 1
                         case .MAYBE:
                             cell.flag = .NONE
                     }
@@ -142,6 +149,10 @@ main :: proc() {
                 rl.DrawTexture(exploded_tex, x, y, rl.RAYWHITE)
             }
         }
+
+        msg := rl.TextFormat("%d of %d mines found", found, MINE_COUNT)
+        tw := rl.MeasureText(msg, 20)
+        rl.DrawText(msg, MIDX - tw / 2, MARGINY + CELL_SIZE * GRID_HEIGHT + 20, 20, rl.RAYWHITE)
         rl.EndDrawing()
     }
 
