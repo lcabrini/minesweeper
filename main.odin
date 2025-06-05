@@ -169,8 +169,8 @@ main :: proc() {
 }
 
 init_grid :: proc(grid: ^[dynamic]Cell, w, h: i32) {
-    for r in 0..<w {
-        for c in 0..<h {
+    for r in 0..<h {
+        for c in 0..<w {
             cell := Cell{}
             cell.x = c
             cell.y = r
@@ -181,11 +181,11 @@ init_grid :: proc(grid: ^[dynamic]Cell, w, h: i32) {
 
 draw_grid :: proc(w, h: i32) {
     for r: i32 = 0; r <= h; r += 1 {
-        rl.DrawLine(MARGINX, r*CELL_SIZE+MARGINY, h*CELL_SIZE+MARGINX, r*CELL_SIZE+MARGINY, rl.RAYWHITE)
+        rl.DrawLine(MARGINX, r*CELL_SIZE+MARGINY, w*CELL_SIZE+MARGINX, r*CELL_SIZE+MARGINY, rl.RAYWHITE)
     }
 
     for c: i32 = 0; c <= w; c += 1 {
-        rl.DrawLine(c*CELL_SIZE+MARGINX, MARGINY, c*CELL_SIZE+MARGINX, w*CELL_SIZE+MARGINY, rl.RAYWHITE)
+        rl.DrawLine(c*CELL_SIZE+MARGINX, MARGINY, c*CELL_SIZE+MARGINX, h*CELL_SIZE+MARGINY, rl.RAYWHITE)
     }
 }
 
