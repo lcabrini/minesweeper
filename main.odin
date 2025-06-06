@@ -15,9 +15,9 @@ MIDY :: WIDTH / 2
 MARGINX :: MIDX - GRID_WIDTH * CELL_SIZE / 2
 MARGINY :: 32
 CELL_SIZE :: 32
-GRID_WIDTH :: 16
-GRID_HEIGHT :: 16
-MINE_COUNT :: 40
+GRID_WIDTH :: 8
+GRID_HEIGHT :: 8
+MINE_COUNT :: 5
 COUNTER_SIZE :: 20
 
 Flag :: enum {
@@ -86,6 +86,8 @@ main :: proc() {
                 } else {
                     open_cells(&game, &grid, cell.y, cell.x)
                 }
+
+                grid_complete(&grid)
             }
         }
 
@@ -109,6 +111,8 @@ main :: proc() {
                     }
                 }
             }
+
+            grid_complete(&grid)
         }
 
         rl.BeginDrawing()
@@ -281,4 +285,24 @@ open_cells :: proc(game: ^Game, grid: ^[dynamic]Cell, row, col: i32) {
     open_cells(game, grid, row+1, col-1)
     open_cells(game, grid, row+1, col)
     open_cells(game, grid, row+1, col+1)
+}
+
+grid_complete :: proc(grid: ^[dynamic]Cell) -> bool {
+    fmt.println("checking...")
+    for cell, i in grid {
+        switch {
+            case cell.flag == .FLAG && !cell.has_mine:
+                fmt.println("wrongly flagged cell found")
+                return false
+            case cell.flag != .FLAG && cell.has_mine:
+                fmt.printfln("unflagged mine found: %d", i)
+                return false
+            case !cell.opened && cell.flag != .FLAG:
+                fmt.printfln("unopened cell found: %d", i)
+                return false
+        }
+    }
+
+    fmt.println("were are good")
+    return true
 }
