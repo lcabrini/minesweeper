@@ -3,6 +3,7 @@ package main
 import "core:fmt"
 import "core:os"
 import "core:strings"
+import "core:time"
 import rl "vendor:raylib"
 
 WIDTH :: 1024
@@ -15,9 +16,9 @@ MIDY :: WIDTH / 2
 MARGINX :: MIDX - GRID_WIDTH * CELL_SIZE / 2
 MARGINY :: 32
 CELL_SIZE :: 32
-GRID_WIDTH :: 8
-GRID_HEIGHT :: 8
-MINE_COUNT :: 5
+GRID_WIDTH :: 16
+GRID_HEIGHT :: 16
+MINE_COUNT :: 40
 COUNTER_SIZE :: 20
 
 Flag :: enum {
@@ -81,6 +82,8 @@ main :: proc() {
     count_adjacent_mines(&grid)
 
     game := Game{}
+    start_time := time.now()
+    seconds: f64
 
     for !rl.WindowShouldClose() {
         if game.state == .STARTED && rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
@@ -121,6 +124,12 @@ main :: proc() {
             }
 
            if grid_complete(&grid) do game.state = .WON
+        }
+
+        if game.state == .STARTED {
+            now := time.now()
+            duration := time.diff(start_time, now)
+            seconds = time.duration_seconds(duration)
         }
 
         rl.BeginDrawing()
@@ -166,9 +175,12 @@ main :: proc() {
             }
         }
 
-        msg := rl.TextFormat("%d of %d mines found", game.found, MINE_COUNT)
-        tw := rl.MeasureText(msg, 20)
-        rl.DrawText(msg, MIDX - tw / 2, MARGINY + CELL_SIZE * GRID_HEIGHT + 20, 20, rl.RAYWHITE)
+        rl.DrawRectangle(0, HEIGHT - 30, WIDTH, HEIGHT - 30, rl.BLUE)
+        stats := rl.TextFormat("%d of %d mines found", game.found, MINE_COUNT)
+        rl.DrawText(stats, 100, HEIGHT - 25, 20, rl.RAYWHITE)
+
+        play_time := rl.TextFormat("Time: %.1f", seconds)
+        rl.DrawText(play_time, 700, HEIGHT - 25, 20, rl.RAYWHITE)
         rl.EndDrawing()
     }
 
