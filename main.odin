@@ -180,7 +180,7 @@ main :: proc() {
         rl.DrawText(stats, 100, HEIGHT - 25, 20, rl.RAYWHITE)
 
         play_time := rl.TextFormat("Time: %.1f", seconds)
-        rl.DrawText(play_time, 700, HEIGHT - 25, 20, rl.RAYWHITE)
+        rl.DrawText(play_time, 800, HEIGHT - 25, 20, rl.RAYWHITE)
         rl.EndDrawing()
     }
 
