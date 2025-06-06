@@ -26,6 +26,12 @@ Flag :: enum {
     MAYBE,
 }
 
+GameState :: enum {
+    STARTED,
+    LOST,
+    WON,
+}
+
 Cell :: struct {
     x: i32,
     y: i32,
@@ -38,6 +44,7 @@ Cell :: struct {
 
 Game :: struct {
     found: int,
+    state: GameState,
 }
 
 main :: proc() {
@@ -76,22 +83,23 @@ main :: proc() {
     game := Game{}
 
     for !rl.WindowShouldClose() {
-        if rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
+        if game.state == .STARTED && rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
             cell := get_mouse_cell(&grid)
             if cell != nil && cell.x >= 0 && cell.x < GRID_WIDTH && cell.y >= 0 && cell.y < GRID_HEIGHT {
                 if cell.has_mine {
                     cell.exploded = true
+                    game.state = .LOST
                 } else if cell.adjacent_mines > 0 {
                     cell.opened = true
                 } else {
                     open_cells(&game, &grid, cell.y, cell.x)
                 }
 
-                grid_complete(&grid)
+                if grid_complete(&grid) do game.state = .WON
             }
         }
 
-        if rl.IsMouseButtonPressed(rl.MouseButton.RIGHT) {
+        if game.state == .STARTED && rl.IsMouseButtonPressed(rl.MouseButton.RIGHT) {
             cell := get_mouse_cell(&grid)
             if cell != nil {
                 if !cell.opened {
@@ -112,7 +120,7 @@ main :: proc() {
                 }
             }
 
-            grid_complete(&grid)
+           if grid_complete(&grid) do game.state = .WON
         }
 
         rl.BeginDrawing()
