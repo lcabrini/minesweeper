@@ -179,7 +179,7 @@ main :: proc() {
         stats := rl.TextFormat("%d of %d mines found", game.found, MINE_COUNT)
         rl.DrawText(stats, 100, HEIGHT - 25, 20, rl.RAYWHITE)
 
-        play_time := rl.TextFormat("Time: %.1f", seconds)
+        play_time := rl.TextFormat("Time: %03d", i32(seconds))
         rl.DrawText(play_time, 800, HEIGHT - 25, 20, rl.RAYWHITE)
         rl.EndDrawing()
     }
