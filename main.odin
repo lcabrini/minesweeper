@@ -46,6 +46,7 @@ Cell :: struct {
 Game :: struct {
     found: int,
     state: GameState,
+    timer_started: bool,
 }
 
 main :: proc() {
@@ -82,11 +83,16 @@ main :: proc() {
     count_adjacent_mines(&grid)
 
     game := Game{}
-    start_time := time.now()
+    start_time: time.Time
     seconds: f64
 
     for !rl.WindowShouldClose() {
         if game.state == .STARTED && rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
+            if !game.timer_started {
+                start_time = time.now()
+                game.timer_started = true
+            }
+
             cell := get_mouse_cell(&grid)
             if cell != nil && cell.x >= 0 && cell.x < GRID_WIDTH && cell.y >= 0 && cell.y < GRID_HEIGHT {
                 if cell.has_mine {
@@ -126,7 +132,7 @@ main :: proc() {
            if grid_complete(&grid) do game.state = .WON
         }
 
-        if game.state == .STARTED {
+        if game.timer_started {
             now := time.now()
             duration := time.diff(start_time, now)
             seconds = time.duration_seconds(duration)
