@@ -132,7 +132,7 @@ main :: proc() {
            if grid_complete(&grid) do game.state = .WON
         }
 
-        if game.timer_started {
+        if game.timer_started && game.state != .LOST && game.state != .WON {
             now := time.now()
             duration := time.diff(start_time, now)
             seconds = time.duration_seconds(duration)
