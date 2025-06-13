@@ -44,8 +44,9 @@ Cell :: struct {
 }
 
 Game :: struct {
-    grid_width: int,
-    grid_height: int,
+    grid_width: i32,
+    grid_height: i32,
+    mine_count: int,
     found: int,
     state: GameState,
     timer_started: bool,
@@ -54,8 +55,8 @@ Game :: struct {
     incorrect_tex: rl.Texture,
     maybe_tex: rl.Texture,
     mine_tex: rl.Texture,
+    grid: [dynamic]Cell
 }
-
 
 main :: proc() {
     cheat := false
@@ -86,11 +87,7 @@ main :: proc() {
         rl.BROWN,
     }
 
-    grid: [dynamic]Cell
-    init_grid(&grid, GRID_WIDTH, GRID_HEIGHT)
-    place_mines(&grid, GRID_WIDTH, GRID_HEIGHT, MINE_COUNT)
-    count_adjacent_mines(&grid)
-
+    start_game(&game, GRID_WIDTH, GRID_HEIGHT, MINE_COUNT)
     start_time: time.Time
     seconds: f64
 
@@ -101,7 +98,7 @@ main :: proc() {
                 game.timer_started = true
             }
 
-            cell := get_mouse_cell(&grid)
+            cell := get_mouse_cell(&game.grid)
             if cell != nil && cell.x >= 0 && cell.x < GRID_WIDTH && cell.y >= 0 && cell.y < GRID_HEIGHT {
                 if cell.has_mine {
                     cell.exploded = true
@@ -109,15 +106,15 @@ main :: proc() {
                 } else if cell.adjacent_mines > 0 {
                     cell.opened = true
                 } else {
-                    open_cells(&game, &grid, cell.y, cell.x)
+                    open_cells(&game, &game.grid, cell.y, cell.x)
                 }
 
-                if grid_complete(&grid) do game.state = .WON
+                if grid_complete(&game.grid) do game.state = .WON
             }
         }
 
         if game.state == .STARTED && rl.IsMouseButtonPressed(rl.MouseButton.RIGHT) {
-            cell := get_mouse_cell(&grid)
+            cell := get_mouse_cell(&game.grid)
             if cell != nil {
                 if !cell.opened {
                     switch cell.flag {
@@ -137,7 +134,7 @@ main :: proc() {
                 }
             }
 
-           if grid_complete(&grid) do game.state = .WON
+           if grid_complete(&game.grid) do game.state = .WON
         }
 
         if game.timer_started && game.state != .LOST && game.state != .WON {
@@ -150,7 +147,7 @@ main :: proc() {
         rl.ClearBackground(rl.BLACK)
         draw_grid(GRID_WIDTH, GRID_HEIGHT)
 
-        for cell in grid {
+        for cell in game.grid {
             if cheat && cell.has_mine {
                 x := cell.x * CELL_SIZE + MARGINX + 1
                 y := cell.y * CELL_SIZE + MARGINY + 1
@@ -206,7 +203,24 @@ main :: proc() {
     rl.CloseWindow()
 }
 
-play :: proc(game: ^Game) {
+start_game :: proc(game: ^Game, gw, gh: i32, mine_count: int) {
+    game.grid_width = gw
+    game.grid_height = gh
+    game.state = nil
+    init_grid(&game.grid, gw, gh)
+    place_mines(&game.grid, gw, gh, mine_count)
+    count_adjacent_mines(&game.grid)
+}
+
+input :: proc(game: ^Game) {
+
+}
+
+update :: proc(game: ^Game) {
+
+}
+
+draw :: proc(game: ^Game) {
 
 }
 
