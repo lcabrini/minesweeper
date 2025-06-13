@@ -44,10 +44,18 @@ Cell :: struct {
 }
 
 Game :: struct {
+    grid_width: int,
+    grid_height: int,
     found: int,
     state: GameState,
     timer_started: bool,
+    exploded_tex: rl.Texture,
+    flag_tex: rl.Texture,
+    incorrect_tex: rl.Texture,
+    maybe_tex: rl.Texture,
+    mine_tex: rl.Texture,
 }
+
 
 main :: proc() {
     cheat := false
@@ -59,11 +67,12 @@ main :: proc() {
     rl.InitWindow(WIDTH, HEIGHT, TITLE)
     rl.SetTargetFPS(60)
 
-    exploded_tex := rl.LoadTexture("exploded.png")
-    flag_tex := rl.LoadTexture("flag.png")
-    incorrect_tex := rl.LoadTexture("incorrect.png")
-    maybe_tex := rl.LoadTexture("maybe.png")
-    mine_tex := rl.LoadTexture("mine.png")
+    game := Game{}
+    game.exploded_tex = rl.LoadTexture("exploded.png")
+    game.flag_tex = rl.LoadTexture("flag.png")
+    game.incorrect_tex = rl.LoadTexture("incorrect.png")
+    game.maybe_tex = rl.LoadTexture("maybe.png")
+    game.mine_tex = rl.LoadTexture("mine.png")
 
     counter_colors: []rl.Color = {
         rl.BLANK,
@@ -82,7 +91,6 @@ main :: proc() {
     place_mines(&grid, GRID_WIDTH, GRID_HEIGHT, MINE_COUNT)
     count_adjacent_mines(&grid)
 
-    game := Game{}
     start_time: time.Time
     seconds: f64
 
@@ -167,17 +175,17 @@ main :: proc() {
                 case .FLAG:
                     x := MARGINX + cell.x * CELL_SIZE + 1
                     y := MARGINY + cell.y * CELL_SIZE + 1
-                    rl.DrawTexture(flag_tex, x, y, rl.RAYWHITE)
+                    rl.DrawTexture(game.flag_tex, x, y, rl.RAYWHITE)
                 case .MAYBE:
                     x := MARGINX + cell.x * CELL_SIZE + 1
                     y := MARGINY + cell.y * CELL_SIZE + 1
-                    rl.DrawTexture(maybe_tex, x, y, rl.RAYWHITE)
+                    rl.DrawTexture(game.maybe_tex, x, y, rl.RAYWHITE)
             }
 
             if cell.exploded {
                 x := MARGINX + cell.x * CELL_SIZE + 1
                 y := MARGINY + cell.y * CELL_SIZE + 1
-                rl.DrawTexture(exploded_tex, x, y, rl.RAYWHITE)
+                rl.DrawTexture(game.exploded_tex, x, y, rl.RAYWHITE)
             }
         }
 
@@ -190,12 +198,16 @@ main :: proc() {
         rl.EndDrawing()
     }
 
-    rl.UnloadTexture(exploded_tex)
-    rl.UnloadTexture(flag_tex)
-    rl.UnloadTexture(incorrect_tex)
-    rl.UnloadTexture(maybe_tex)
-    rl.UnloadTexture(mine_tex)
+    rl.UnloadTexture(game.exploded_tex)
+    rl.UnloadTexture(game.flag_tex)
+    rl.UnloadTexture(game.incorrect_tex)
+    rl.UnloadTexture(game.maybe_tex)
+    rl.UnloadTexture(game.mine_tex)
     rl.CloseWindow()
+}
+
+play :: proc(game: ^Game) {
+
 }
 
 init_grid :: proc(grid: ^[dynamic]Cell, w, h: i32) {
