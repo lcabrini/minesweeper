@@ -88,56 +88,17 @@ main :: proc() {
     start_game(&game, GRID_WIDTH, GRID_HEIGHT, MINE_COUNT)
 
     for !rl.WindowShouldClose() {
-        if game.state == .STARTED && rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
-            if !game.timer_started {
-                game.start_time = time.now()
-                game.timer_started = true
-            }
-
-            cell := get_mouse_cell(&game.grid)
-            if cell != nil && cell.x >= 0 && cell.x < GRID_WIDTH && cell.y >= 0 && cell.y < GRID_HEIGHT {
-                if cell.has_mine {
-                    cell.exploded = true
-                    game.state = .LOST
-                } else if cell.adjacent_mines > 0 {
-                    cell.opened = true
-                } else {
-                    open_cells(&game, &game.grid, cell.y, cell.x)
-                }
-
-                if grid_complete(&game.grid) do game.state = .WON
-            }
+        switch screen {
+            case .INIT:
+            case .GAME:
+                input(&game)
+                update(&game)
+            case .GAMEOVER:
+            case .HISCORES:
         }
 
-        if game.state == .STARTED && rl.IsMouseButtonPressed(rl.MouseButton.RIGHT) {
-            cell := get_mouse_cell(&game.grid)
-            if cell != nil {
-                if !cell.opened {
-                    switch cell.flag {
-                        case .NONE:
-                            if game.found < MINE_COUNT {
-                                cell.flag = .FLAG
-                                game.found += 1
-                            } else {
-                                cell.flag = .MAYBE
-                            }
-                        case .FLAG:
-                            cell.flag = .MAYBE
-                            game.found -= 1
-                        case .MAYBE:
-                            cell.flag = .NONE
-                    }
-                }
-            }
 
-           if grid_complete(&game.grid) do game.state = .WON
-        }
 
-        if game.timer_started && game.state != .LOST && game.state != .WON {
-            now := time.now()
-            duration := time.diff(game.start_time, now)
-            game.seconds = time.duration_seconds(duration)
-        }
 
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
@@ -170,11 +131,58 @@ start_game :: proc(game: ^Game, gw, gh: i32, mine_count: int) {
 }
 
 input :: proc(game: ^Game) {
+    if game.state == .STARTED && rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
+        if !game.timer_started {
+            game.start_time = time.now()
+            game.timer_started = true
+        }
 
+        cell := get_mouse_cell(&game.grid)
+        if cell != nil && cell.x >= 0 && cell.x < GRID_WIDTH && cell.y >= 0 && cell.y < GRID_HEIGHT {
+            if cell.has_mine {
+                cell.exploded = true
+                game.state = .LOST
+            } else if cell.adjacent_mines > 0 {
+                cell.opened = true
+            } else {
+                open_cells(game, &game.grid, cell.y, cell.x)
+            }
+
+            if grid_complete(&game.grid) do game.state = .WON
+        }
+    }
+
+    if game.state == .STARTED && rl.IsMouseButtonPressed(rl.MouseButton.RIGHT) {
+        cell := get_mouse_cell(&game.grid)
+        if cell != nil {
+            if !cell.opened {
+                switch cell.flag {
+                    case .NONE:
+                        if game.found < MINE_COUNT {
+                            cell.flag = .FLAG
+                            game.found += 1
+                        } else {
+                            cell.flag = .MAYBE
+                        }
+                    case .FLAG:
+                        cell.flag = .MAYBE
+                        game.found -= 1
+                    case .MAYBE:
+                        cell.flag = .NONE
+                }
+            }
+        }
+
+        if grid_complete(&game.grid) do game.state = .WON
+    }
 }
 
 update :: proc(game: ^Game) {
-
+    if game.timer_started && game.state != .LOST && game.state != .WON {
+        now := time.now()
+        duration := time.diff(game.start_time, now)
+        game.seconds = time.duration_seconds(duration)
+    }
 }
 
 draw :: proc(game: ^Game) {
