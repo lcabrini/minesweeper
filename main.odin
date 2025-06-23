@@ -97,9 +97,6 @@ main :: proc() {
             case .HISCORES:
         }
 
-
-
-
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
         switch screen {
