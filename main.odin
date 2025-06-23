@@ -33,6 +33,13 @@ GameState :: enum {
     WON,
 }
 
+GameScreen :: enum {
+    INIT,
+    GAME,
+    GAMEOVER,
+    HISCORES,
+}
+
 Cell :: struct {
     x: i32,
     y: i32,
@@ -50,51 +57,40 @@ Game :: struct {
     found: int,
     state: GameState,
     timer_started: bool,
+    start_time: time.Time,
+    seconds: f64,
     exploded_tex: rl.Texture,
     flag_tex: rl.Texture,
     incorrect_tex: rl.Texture,
     maybe_tex: rl.Texture,
     mine_tex: rl.Texture,
-    grid: [dynamic]Cell
+    grid: [dynamic]Cell,
+    cheat_mode: bool,
 }
 
 main :: proc() {
-    cheat := false
+    game := Game{}
     if len(os.args[1:]) > 0 && os.args[1] == "cheat" {
-        cheat = true
+        game.cheat_mode = true
     }
 
     rl.SetConfigFlags({.VSYNC_HINT})
     rl.InitWindow(WIDTH, HEIGHT, TITLE)
     rl.SetTargetFPS(60)
 
-    game := Game{}
+    screen := GameScreen.GAME
     game.exploded_tex = rl.LoadTexture("exploded.png")
     game.flag_tex = rl.LoadTexture("flag.png")
     game.incorrect_tex = rl.LoadTexture("incorrect.png")
     game.maybe_tex = rl.LoadTexture("maybe.png")
     game.mine_tex = rl.LoadTexture("mine.png")
 
-    counter_colors: []rl.Color = {
-        rl.BLANK,
-        rl.RAYWHITE,
-        rl.YELLOW,
-        rl.ORANGE,
-        rl.BLUE,
-        rl.GREEN,
-        rl.PURPLE,
-        rl.RED,
-        rl.BROWN,
-    }
-
     start_game(&game, GRID_WIDTH, GRID_HEIGHT, MINE_COUNT)
-    start_time: time.Time
-    seconds: f64
 
     for !rl.WindowShouldClose() {
         if game.state == .STARTED && rl.IsMouseButtonPressed(rl.MouseButton.LEFT) {
             if !game.timer_started {
-                start_time = time.now()
+                game.start_time = time.now()
                 game.timer_started = true
             }
 
@@ -139,59 +135,20 @@ main :: proc() {
 
         if game.timer_started && game.state != .LOST && game.state != .WON {
             now := time.now()
-            duration := time.diff(start_time, now)
-            seconds = time.duration_seconds(duration)
+            duration := time.diff(game.start_time, now)
+            game.seconds = time.duration_seconds(duration)
         }
 
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
-        draw_grid(GRID_WIDTH, GRID_HEIGHT)
-
-        for cell in game.grid {
-            if cheat && cell.has_mine {
-                x := cell.x * CELL_SIZE + MARGINX + 1
-                y := cell.y * CELL_SIZE + MARGINY + 1
-                w: i32 = CELL_SIZE - 2
-                h: i32 = CELL_SIZE - 2
-                rl.DrawRectangle(x, y, h, w, rl.DARKGRAY)
-            } else if cell.opened && cell.adjacent_mines > 0 {
-                s := strings.clone_to_cstring(fmt.tprint(cell.adjacent_mines))
-                tw := rl.MeasureText(s, COUNTER_SIZE)
-                x := MARGINX + cell.x * CELL_SIZE + (CELL_SIZE / 2 - tw / 2)
-                y := MARGINY + cell.y * CELL_SIZE + (CELL_SIZE / 2 - COUNTER_SIZE / 2)
-                rl.DrawText(s, x, y, COUNTER_SIZE, counter_colors[cell.adjacent_mines])
-            } else if !cell.opened {
-                x := MARGINX + cell.x * CELL_SIZE + 1
-                y := MARGINY + cell.y * CELL_SIZE + 1
-                h := i32(CELL_SIZE - 2)
-                w := i32(CELL_SIZE - 2)
-                rl.DrawRectangle(x, y, w, h, rl.GRAY)
-            }
-
-            #partial switch cell.flag {
-                case .FLAG:
-                    x := MARGINX + cell.x * CELL_SIZE + 1
-                    y := MARGINY + cell.y * CELL_SIZE + 1
-                    rl.DrawTexture(game.flag_tex, x, y, rl.RAYWHITE)
-                case .MAYBE:
-                    x := MARGINX + cell.x * CELL_SIZE + 1
-                    y := MARGINY + cell.y * CELL_SIZE + 1
-                    rl.DrawTexture(game.maybe_tex, x, y, rl.RAYWHITE)
-            }
-
-            if cell.exploded {
-                x := MARGINX + cell.x * CELL_SIZE + 1
-                y := MARGINY + cell.y * CELL_SIZE + 1
-                rl.DrawTexture(game.exploded_tex, x, y, rl.RAYWHITE)
-            }
+        switch screen {
+            case .INIT:
+            case .GAME:
+                draw(&game)
+            case .GAMEOVER:
+            case .HISCORES:
         }
 
-        rl.DrawRectangle(0, HEIGHT - 30, WIDTH, HEIGHT - 30, rl.BLUE)
-        stats := rl.TextFormat("%d of %d mines found", game.found, MINE_COUNT)
-        rl.DrawText(stats, 100, HEIGHT - 25, 20, rl.RAYWHITE)
-
-        play_time := rl.TextFormat("Time: %03d", i32(seconds))
-        rl.DrawText(play_time, 800, HEIGHT - 25, 20, rl.RAYWHITE)
         rl.EndDrawing()
     }
 
@@ -221,7 +178,65 @@ update :: proc(game: ^Game) {
 }
 
 draw :: proc(game: ^Game) {
+    counter_colors: []rl.Color = {
+        rl.BLANK,
+        rl.RAYWHITE,
+        rl.YELLOW,
+        rl.ORANGE,
+        rl.BLUE,
+        rl.GREEN,
+        rl.PURPLE,
+        rl.RED,
+        rl.BROWN,
+    }
 
+    draw_grid(GRID_WIDTH, GRID_HEIGHT)
+
+    for cell in game.grid {
+        if game.cheat_mode && cell.has_mine {
+            x := cell.x * CELL_SIZE + MARGINX + 1
+            y := cell.y * CELL_SIZE + MARGINY + 1
+            w: i32 = CELL_SIZE - 2
+            h: i32 = CELL_SIZE - 2
+            rl.DrawRectangle(x, y, h, w, rl.DARKGRAY)
+        } else if cell.opened && cell.adjacent_mines > 0 {
+            s := strings.clone_to_cstring(fmt.tprint(cell.adjacent_mines))
+            tw := rl.MeasureText(s, COUNTER_SIZE)
+            x := MARGINX + cell.x * CELL_SIZE + (CELL_SIZE / 2 - tw / 2)
+            y := MARGINY + cell.y * CELL_SIZE + (CELL_SIZE / 2 - COUNTER_SIZE / 2)
+            rl.DrawText(s, x, y, COUNTER_SIZE, counter_colors[cell.adjacent_mines])
+        } else if !cell.opened {
+            x := MARGINX + cell.x * CELL_SIZE + 1
+            y := MARGINY + cell.y * CELL_SIZE + 1
+            h := i32(CELL_SIZE - 2)
+            w := i32(CELL_SIZE - 2)
+            rl.DrawRectangle(x, y, w, h, rl.GRAY)
+        }
+
+        #partial switch cell.flag {
+            case .FLAG:
+                x := MARGINX + cell.x * CELL_SIZE + 1
+                y := MARGINY + cell.y * CELL_SIZE + 1
+                rl.DrawTexture(game.flag_tex, x, y, rl.RAYWHITE)
+            case .MAYBE:
+                x := MARGINX + cell.x * CELL_SIZE + 1
+                y := MARGINY + cell.y * CELL_SIZE + 1
+                rl.DrawTexture(game.maybe_tex, x, y, rl.RAYWHITE)
+        }
+
+        if cell.exploded {
+            x := MARGINX + cell.x * CELL_SIZE + 1
+            y := MARGINY + cell.y * CELL_SIZE + 1
+            rl.DrawTexture(game.exploded_tex, x, y, rl.RAYWHITE)
+        }
+    }
+
+    rl.DrawRectangle(0, HEIGHT - 30, WIDTH, HEIGHT - 30, rl.BLUE)
+    stats := rl.TextFormat("%d of %d mines found", game.found, MINE_COUNT)
+    rl.DrawText(stats, 100, HEIGHT - 25, 20, rl.RAYWHITE)
+
+    play_time := rl.TextFormat("Time: %03d", i32(game.seconds))
+    rl.DrawText(play_time, 800, HEIGHT - 25, 20, rl.RAYWHITE)
 }
 
 init_grid :: proc(grid: ^[dynamic]Cell, w, h: i32) {
