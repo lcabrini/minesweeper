@@ -1,6 +1,7 @@
 package main
 
 import "core:fmt"
+import "core:math"
 import "core:os"
 import "core:strings"
 import "core:time"
@@ -20,6 +21,14 @@ Flag :: enum {
     NONE,
     FLAG,
     MAYBE,
+}
+
+InitScreenStage :: enum {
+    START,
+    ODIN_LOGO,
+    RAYLIB_LOGO,
+    TITLE,
+    BUTTONS,
 }
 
 GameState :: enum {
@@ -66,6 +75,18 @@ Game :: struct {
     margin_y: i32
 }
 
+InitScreen :: struct {
+    odin_logo: rl.Texture,
+    odin_logo_pos: rl.Vector2,
+    odin_logo_tint: rl.Color,
+    odin_logo_heading: f32,
+    raylib_logo: rl.Texture,
+    raylib_logo_pos: rl.Vector2,
+    raylib_logo_tint: rl.Color,
+    raylib_logo_heading: f32,
+    stage: InitScreenStage,
+}
+
 main :: proc() {
     game := Game{}
     if len(os.args[1:]) > 0 && os.args[1] == "cheat" {
@@ -75,6 +96,11 @@ main :: proc() {
     rl.SetConfigFlags({.VSYNC_HINT})
     rl.InitWindow(WIDTH, HEIGHT, TITLE)
     rl.SetTargetFPS(60)
+
+    init_screen := InitScreen{}
+    init_screen.odin_logo = rl.LoadTexture("odin.png")
+    init_screen.raylib_logo = rl.LoadTexture("raylib.png")
+    init_screen.stage = InitScreenStage.START
 
     game.screen = GameScreen.INIT
     game.exploded_tex = rl.LoadTexture("exploded.png")
@@ -86,7 +112,7 @@ main :: proc() {
     for !rl.WindowShouldClose() {
         switch game.screen {
             case .INIT:
-                //init_input(&game)
+                update_init(&init_screen)
             case .GAME:
                 input(&game)
                 update(&game)
@@ -98,7 +124,7 @@ main :: proc() {
         rl.ClearBackground(rl.BLACK)
         #partial switch game.screen {
             case .INIT:
-                draw_init(&game)
+                draw_init(&game, &init_screen)
             case .GAME:
                 draw(&game)
             case .GAMEOVER:
@@ -113,6 +139,8 @@ main :: proc() {
     rl.UnloadTexture(game.incorrect_tex)
     rl.UnloadTexture(game.maybe_tex)
     rl.UnloadTexture(game.mine_tex)
+    rl.UnloadTexture(init_screen.odin_logo)
+    rl.UnloadTexture(init_screen.raylib_logo)
     rl.CloseWindow()
 }
 
@@ -369,7 +397,50 @@ grid_complete :: proc(grid: ^[dynamic]Cell) -> bool {
     return true
 }
 
-draw_init :: proc(game: ^Game) {
+
+update_init :: proc(init_screen: ^InitScreen) {
+    switch init_screen.stage {
+        case .START:
+            init_screen.odin_logo_pos = rl.Vector2{0, 0}
+            init_screen.odin_logo_tint = {255, 255, 255, 0}
+            init_screen.odin_logo_heading = math.atan2(HEIGHT - f32(init_screen.odin_logo.height) - 10, WIDTH - f32(init_screen.odin_logo.width) - 10)
+            init_screen.raylib_logo_pos = rl.Vector2{0, 0}
+            init_screen.raylib_logo_tint = {255, 255, 255, 0}
+            init_screen.raylib_logo_heading = math.atan2(HEIGHT - f32(init_screen.raylib_logo.height) - 10, WIDTH - f32(init_screen.raylib_logo.width) - f32(init_screen.odin_logo.width) - 20)
+            init_screen.stage = .ODIN_LOGO
+
+        case .ODIN_LOGO:
+            init_screen.odin_logo_pos += rl.Vector2{10 * math.cos(init_screen.odin_logo_heading), 10 * math.sin(init_screen.odin_logo_heading)}
+            if init_screen.odin_logo_tint.a < 255 do init_screen.odin_logo_tint.a += 3
+            if init_screen.odin_logo_pos.y >= HEIGHT - f32(init_screen.odin_logo.height) - 10 {
+                init_screen.odin_logo_pos.y = HEIGHT - f32(init_screen.odin_logo.height) - 10
+                init_screen.stage = .RAYLIB_LOGO
+            }
+
+        case .RAYLIB_LOGO:
+            init_screen.raylib_logo_pos += rl.Vector2{10 * math.cos(init_screen.raylib_logo_heading), 10 * math.sin(init_screen.raylib_logo_heading)}
+            if init_screen.raylib_logo_tint.a < 255 do init_screen.raylib_logo_tint.a += 3
+            if init_screen.raylib_logo_pos.y >= HEIGHT - f32(init_screen.odin_logo.height) - 10 {
+                init_screen.raylib_logo_pos.y = HEIGHT - f32(init_screen.raylib_logo.height) - 10
+                init_screen.stage = .TITLE
+            }
+
+        case .TITLE:
+
+        case .BUTTONS:
+    }
+}
+
+draw_init :: proc(game: ^Game, init_screen: ^InitScreen) {
+    if init_screen.stage >= .ODIN_LOGO {
+        rl.DrawTextureEx(init_screen.odin_logo, init_screen.odin_logo_pos, 0, 1, init_screen.odin_logo_tint)
+    }
+
+    if init_screen.stage >= .RAYLIB_LOGO {
+        rl.DrawTextureEx(init_screen.raylib_logo, init_screen.raylib_logo_pos, 0, 1, init_screen.raylib_logo_tint)
+    }
+
+    if init_screen.stage >= .BUTTONS {
     if rl.GuiButton(rl.Rectangle{100, 10, WIDTH-200, 40}, "Easy") {
         game.state = nil
         game.grid_width = 9
@@ -408,5 +479,5 @@ draw_init :: proc(game: ^Game) {
         count_adjacent_mines(game)
         game.screen = GameScreen.GAME
     }
-
+    }
 }
