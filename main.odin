@@ -76,6 +76,7 @@ Game :: struct {
 }
 
 InitScreen :: struct {
+    minesweeper_logo: rl.Texture,
     odin_logo: rl.Texture,
     odin_logo_pos: rl.Vector2,
     odin_logo_tint: rl.Color,
@@ -98,6 +99,7 @@ main :: proc() {
     rl.SetTargetFPS(60)
 
     init_screen := InitScreen{}
+    init_screen.minesweeper_logo = rl.LoadTexture("minesweeper.png")
     init_screen.odin_logo = rl.LoadTexture("odin.png")
     init_screen.raylib_logo = rl.LoadTexture("raylib.png")
     init_screen.stage = InitScreenStage.START
@@ -139,6 +141,7 @@ main :: proc() {
     rl.UnloadTexture(game.incorrect_tex)
     rl.UnloadTexture(game.maybe_tex)
     rl.UnloadTexture(game.mine_tex)
+    rl.UnloadTexture(init_screen.minesweeper_logo)
     rl.UnloadTexture(init_screen.odin_logo)
     rl.UnloadTexture(init_screen.raylib_logo)
     rl.CloseWindow()
@@ -426,6 +429,7 @@ update_init :: proc(init_screen: ^InitScreen) {
             }
 
         case .TITLE:
+            init_screen.stage = .BUTTONS
 
         case .BUTTONS:
     }
@@ -440,8 +444,12 @@ draw_init :: proc(game: ^Game, init_screen: ^InitScreen) {
         rl.DrawTextureEx(init_screen.raylib_logo, init_screen.raylib_logo_pos, 0, 1, init_screen.raylib_logo_tint)
     }
 
+    if init_screen.stage >= .TITLE {
+        rl.DrawTexture(init_screen.minesweeper_logo, 0, 0, rl.WHITE)
+    }
+
     if init_screen.stage >= .BUTTONS {
-    if rl.GuiButton(rl.Rectangle{100, 10, WIDTH-200, 40}, "Easy") {
+    if rl.GuiButton(rl.Rectangle{100, 300, WIDTH-200, 40}, "Easy") {
         game.state = nil
         game.grid_width = 9
         game.grid_height = 9
@@ -454,7 +462,7 @@ draw_init :: proc(game: ^Game, init_screen: ^InitScreen) {
         game.screen = GameScreen.GAME
     }
 
-     if rl.GuiButton(rl.Rectangle{100, 60, WIDTH-200, 40}, "Medium") {
+     if rl.GuiButton(rl.Rectangle{100, 350, WIDTH-200, 40}, "Medium") {
         game.state = nil
         game.grid_width = 16
         game.grid_height = 16
@@ -467,7 +475,7 @@ draw_init :: proc(game: ^Game, init_screen: ^InitScreen) {
         game.screen = GameScreen.GAME
     }
 
-     if rl.GuiButton(rl.Rectangle{100, 110, WIDTH-200, 40}, "Hard") {
+     if rl.GuiButton(rl.Rectangle{100, 400, WIDTH-200, 40}, "Hard") {
         game.state = nil
         game.grid_width = 30
         game.grid_height = 16
