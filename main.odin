@@ -13,7 +13,6 @@ TITLE :: "Minewsweeper"
 MIDX :: WIDTH / 2
 MIDY :: WIDTH / 2
 
-MARGINX :: MIDX - GRID_WIDTH * CELL_SIZE / 2
 MARGINY :: 32
 CELL_SIZE :: 32
 GRID_WIDTH :: 16
@@ -67,6 +66,7 @@ Game :: struct {
     mine_tex: rl.Texture,
     grid: [dynamic]Cell,
     cheat_mode: bool,
+    margin_x: i32
 }
 
 main :: proc() {
@@ -126,7 +126,7 @@ input :: proc(game: ^Game) {
             game.timer_started = true
         }
 
-        cell := get_mouse_cell(&game.grid)
+        cell := get_mouse_cell(game)
         if cell != nil && cell.x >= 0 && cell.x < GRID_WIDTH && cell.y >= 0 && cell.y < GRID_HEIGHT {
             if cell.has_mine {
                 cell.exploded = true
@@ -142,7 +142,7 @@ input :: proc(game: ^Game) {
     }
 
     if game.state == .STARTED && rl.IsMouseButtonPressed(rl.MouseButton.RIGHT) {
-        cell := get_mouse_cell(&game.grid)
+        cell := get_mouse_cell(game)
         if cell != nil {
             if !cell.opened {
                 switch cell.flag {
@@ -191,7 +191,7 @@ draw :: proc(game: ^Game) {
 
     for cell in game.grid {
         if game.cheat_mode && cell.has_mine {
-            x := cell.x * CELL_SIZE + MARGINX + 1
+            x := cell.x * CELL_SIZE + game.margin_x + 1
             y := cell.y * CELL_SIZE + MARGINY + 1
             w: i32 = CELL_SIZE - 2
             h: i32 = CELL_SIZE - 2
@@ -199,11 +199,11 @@ draw :: proc(game: ^Game) {
         } else if cell.opened && cell.adjacent_mines > 0 {
             s := strings.clone_to_cstring(fmt.tprint(cell.adjacent_mines))
             tw := rl.MeasureText(s, COUNTER_SIZE)
-            x := MARGINX + cell.x * CELL_SIZE + (CELL_SIZE / 2 - tw / 2)
+            x := game.margin_x + cell.x * CELL_SIZE + (CELL_SIZE / 2 - tw / 2)
             y := MARGINY + cell.y * CELL_SIZE + (CELL_SIZE / 2 - COUNTER_SIZE / 2)
             rl.DrawText(s, x, y, COUNTER_SIZE, counter_colors[cell.adjacent_mines])
         } else if !cell.opened {
-            x := MARGINX + cell.x * CELL_SIZE + 1
+            x := game.margin_x + cell.x * CELL_SIZE + 1
             y := MARGINY + cell.y * CELL_SIZE + 1
             h := i32(CELL_SIZE - 2)
             w := i32(CELL_SIZE - 2)
@@ -212,17 +212,17 @@ draw :: proc(game: ^Game) {
 
         #partial switch cell.flag {
             case .FLAG:
-                x := MARGINX + cell.x * CELL_SIZE + 1
+                x := game.margin_x + cell.x * CELL_SIZE + 1
                 y := MARGINY + cell.y * CELL_SIZE + 1
                 rl.DrawTexture(game.flag_tex, x, y, rl.RAYWHITE)
             case .MAYBE:
-                x := MARGINX + cell.x * CELL_SIZE + 1
+                x := game.margin_x + cell.x * CELL_SIZE + 1
                 y := MARGINY + cell.y * CELL_SIZE + 1
                 rl.DrawTexture(game.maybe_tex, x, y, rl.RAYWHITE)
         }
 
         if cell.exploded {
-            x := MARGINX + cell.x * CELL_SIZE + 1
+            x := game.margin_x + cell.x * CELL_SIZE + 1
             y := MARGINY + cell.y * CELL_SIZE + 1
             rl.DrawTexture(game.exploded_tex, x, y, rl.RAYWHITE)
         }
@@ -249,20 +249,20 @@ init_grid :: proc(game: ^Game) {
 
 draw_grid :: proc(game: ^Game) {
     for r: i32 = 0; r <= game.grid_height; r += 1 {
-        rl.DrawLine(MARGINX, r*CELL_SIZE+MARGINY, game.grid_width*CELL_SIZE+MARGINX, r*CELL_SIZE+MARGINY, rl.RAYWHITE)
+        rl.DrawLine(game.margin_x, r*CELL_SIZE+MARGINY, game.grid_width*CELL_SIZE+game.margin_x, r*CELL_SIZE+MARGINY, rl.RAYWHITE)
     }
 
-    for c: i32 = 0; c <= game.grid_height; c += 1 {
-        rl.DrawLine(c*CELL_SIZE+MARGINX, MARGINY, c*CELL_SIZE+MARGINX, game.grid_height*CELL_SIZE+MARGINY, rl.RAYWHITE)
+    for c: i32 = 0; c <= game.grid_width; c += 1 {
+        rl.DrawLine(c*CELL_SIZE+game.margin_x, MARGINY, c*CELL_SIZE+game.margin_x, game.grid_height*CELL_SIZE+MARGINY, rl.RAYWHITE)
     }
 }
 
-get_mouse_cell :: proc(grid: ^[dynamic]Cell) -> ^Cell {
+get_mouse_cell :: proc(game: ^Game) -> ^Cell {
     mp := rl.GetMousePosition()
-    x := mp.x >= MARGINX ? i32((mp.x - MARGINX) / CELL_SIZE) : -1
+    x := mp.x >= f32(game.margin_x) ? i32((mp.x - f32(game.margin_x)) / CELL_SIZE) : -1
     y := mp.y >= MARGINY ? i32((mp.y - MARGINY) / CELL_SIZE) : -1
 
-    for &cell in grid {
+    for &cell in game.grid {
         if x == cell.x && y == cell.y {
             return &cell
         }
@@ -378,6 +378,7 @@ draw_init :: proc(game: ^Game) {
         game.grid_width = 9
         game.grid_height = 9
         game.mine_count = 10
+         game.margin_x = MIDX - game.grid_width * CELL_SIZE / 2
         init_grid(game)
         place_mines(game)
         count_adjacent_mines(game)
@@ -389,6 +390,7 @@ draw_init :: proc(game: ^Game) {
         game.grid_width = 16
         game.grid_height = 16
         game.mine_count = 40
+        game.margin_x = MIDX - game.grid_width * CELL_SIZE / 2
         init_grid(game)
         place_mines(game)
         count_adjacent_mines(game)
@@ -400,6 +402,7 @@ draw_init :: proc(game: ^Game) {
         game.grid_width = 30
         game.grid_height = 16
         game.mine_count = 99
+        game.margin_x = MIDX - game.grid_width * CELL_SIZE / 2
         init_grid(game)
         place_mines(game)
         count_adjacent_mines(game)
