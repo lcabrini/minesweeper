@@ -89,9 +89,7 @@ main :: proc() {
     for !rl.WindowShouldClose() {
         switch game.screen {
             case .INIT:
-                init_input(&game)
-
-
+                //init_input(&game)
             case .GAME:
                 input(&game)
                 update(&game)
@@ -103,6 +101,7 @@ main :: proc() {
         rl.ClearBackground(rl.BLACK)
         #partial switch game.screen {
             case .INIT:
+                draw_init(&game)
             case .GAME:
                 draw(&game)
             case .GAMEOVER:
@@ -373,14 +372,38 @@ grid_complete :: proc(grid: ^[dynamic]Cell) -> bool {
     return true
 }
 
-init_input :: proc(game: ^Game) {
-    game.state = nil
-    game.grid_width = 16
-    game.grid_height = 16
-    game.mine_count = 40
-    init_grid(game)
-    place_mines(game)
-    count_adjacent_mines(game)
-    game.screen = GameScreen.GAME
+draw_init :: proc(game: ^Game) {
+    if rl.GuiButton(rl.Rectangle{100, 10, WIDTH-200, 40}, "Easy") {
+        game.state = nil
+        game.grid_width = 9
+        game.grid_height = 9
+        game.mine_count = 10
+        init_grid(game)
+        place_mines(game)
+        count_adjacent_mines(game)
+        game.screen = GameScreen.GAME
+    }
+
+     if rl.GuiButton(rl.Rectangle{100, 60, WIDTH-200, 40}, "Medium") {
+        game.state = nil
+        game.grid_width = 16
+        game.grid_height = 16
+        game.mine_count = 40
+        init_grid(game)
+        place_mines(game)
+        count_adjacent_mines(game)
+        game.screen = GameScreen.GAME
+    }
+
+     if rl.GuiButton(rl.Rectangle{100, 110, WIDTH-200, 40}, "Hard") {
+        game.state = nil
+        game.grid_width = 30
+        game.grid_height = 16
+        game.mine_count = 99
+        init_grid(game)
+        place_mines(game)
+        count_adjacent_mines(game)
+        game.screen = GameScreen.GAME
+    }
 
 }
