@@ -51,6 +51,7 @@ Cell :: struct {
 }
 
 Game :: struct {
+    screen: GameScreen,
     grid_width: i32,
     grid_height: i32,
     mine_count: int,
@@ -78,18 +79,19 @@ main :: proc() {
     rl.InitWindow(WIDTH, HEIGHT, TITLE)
     rl.SetTargetFPS(60)
 
-    screen := GameScreen.GAME
+    game.screen = GameScreen.INIT
     game.exploded_tex = rl.LoadTexture("exploded.png")
     game.flag_tex = rl.LoadTexture("flag.png")
     game.incorrect_tex = rl.LoadTexture("incorrect.png")
     game.maybe_tex = rl.LoadTexture("maybe.png")
     game.mine_tex = rl.LoadTexture("mine.png")
 
-    start_game(&game, GRID_WIDTH, GRID_HEIGHT, MINE_COUNT)
-
     for !rl.WindowShouldClose() {
-        switch screen {
+        switch game.screen {
             case .INIT:
+                init_input(&game)
+
+
             case .GAME:
                 input(&game)
                 update(&game)
@@ -99,7 +101,7 @@ main :: proc() {
 
         rl.BeginDrawing()
         rl.ClearBackground(rl.BLACK)
-        switch screen {
+        #partial switch game.screen {
             case .INIT:
             case .GAME:
                 draw(&game)
@@ -116,15 +118,6 @@ main :: proc() {
     rl.UnloadTexture(game.maybe_tex)
     rl.UnloadTexture(game.mine_tex)
     rl.CloseWindow()
-}
-
-start_game :: proc(game: ^Game, gw, gh: i32, mine_count: int) {
-    game.grid_width = gw
-    game.grid_height = gh
-    game.state = nil
-    init_grid(&game.grid, gw, gh)
-    place_mines(&game.grid, gw, gh, mine_count)
-    count_adjacent_mines(&game.grid)
 }
 
 input :: proc(game: ^Game) {
@@ -195,7 +188,7 @@ draw :: proc(game: ^Game) {
         rl.BROWN,
     }
 
-    draw_grid(GRID_WIDTH, GRID_HEIGHT)
+    draw_grid(game)
 
     for cell in game.grid {
         if game.cheat_mode && cell.has_mine {
@@ -244,24 +237,24 @@ draw :: proc(game: ^Game) {
     rl.DrawText(play_time, 800, HEIGHT - 25, 20, rl.RAYWHITE)
 }
 
-init_grid :: proc(grid: ^[dynamic]Cell, w, h: i32) {
-    for r in 0..<h {
-        for c in 0..<w {
+init_grid :: proc(game: ^Game) {
+    for r in 0..<game.grid_height {
+        for c in 0..<game.grid_width {
             cell := Cell{}
             cell.x = c
             cell.y = r
-            append(grid, cell)
+            append(&game.grid, cell)
         }
     }
 }
 
-draw_grid :: proc(w, h: i32) {
-    for r: i32 = 0; r <= h; r += 1 {
-        rl.DrawLine(MARGINX, r*CELL_SIZE+MARGINY, w*CELL_SIZE+MARGINX, r*CELL_SIZE+MARGINY, rl.RAYWHITE)
+draw_grid :: proc(game: ^Game) {
+    for r: i32 = 0; r <= game.grid_height; r += 1 {
+        rl.DrawLine(MARGINX, r*CELL_SIZE+MARGINY, game.grid_width*CELL_SIZE+MARGINX, r*CELL_SIZE+MARGINY, rl.RAYWHITE)
     }
 
-    for c: i32 = 0; c <= w; c += 1 {
-        rl.DrawLine(c*CELL_SIZE+MARGINX, MARGINY, c*CELL_SIZE+MARGINX, h*CELL_SIZE+MARGINY, rl.RAYWHITE)
+    for c: i32 = 0; c <= game.grid_height; c += 1 {
+        rl.DrawLine(c*CELL_SIZE+MARGINX, MARGINY, c*CELL_SIZE+MARGINX, game.grid_height*CELL_SIZE+MARGINY, rl.RAYWHITE)
     }
 }
 
@@ -279,13 +272,13 @@ get_mouse_cell :: proc(grid: ^[dynamic]Cell) -> ^Cell {
     return nil
 }
 
-place_mines :: proc(grid: ^[dynamic]Cell, w, h: i32, count: int) {
+place_mines :: proc(game: ^Game) {
     placed := 0
     outer: for {
-        x := rl.GetRandomValue(0, w-1)
-        y := rl.GetRandomValue(0, h-1)
+        x := rl.GetRandomValue(0, game.grid_width-1)
+        y := rl.GetRandomValue(0, game.grid_height-1)
 
-        for &cell in grid {
+        for &cell in game.grid {
             if cell.x == x && cell.y == y {
                 if cell.has_mine do continue outer
 
@@ -295,11 +288,12 @@ place_mines :: proc(grid: ^[dynamic]Cell, w, h: i32, count: int) {
             }
         }
 
-        if placed >= count do return
+        if placed >= game.mine_count do return
     }
 }
 
-count_adjacent_mines :: proc(grid: ^[dynamic]Cell) {
+count_adjacent_mines :: proc(game: ^Game) {   //grid: ^[dynamic]Cell) {
+    grid := &game.grid
     for i := 0; i < len(grid); i += 1 {
         cell := &grid[i]
         if !cell.has_mine {
@@ -377,4 +371,16 @@ grid_complete :: proc(grid: ^[dynamic]Cell) -> bool {
 
     fmt.println("were are good")
     return true
+}
+
+init_input :: proc(game: ^Game) {
+    game.state = nil
+    game.grid_width = 16
+    game.grid_height = 16
+    game.mine_count = 40
+    init_grid(game)
+    place_mines(game)
+    count_adjacent_mines(game)
+    game.screen = GameScreen.GAME
+
 }
